@@ -136,6 +136,14 @@
     "path_with_namespace": "comput/ecommerce/ecommerce-client-ui"
   },
   {
+    "id": 43699807,
+    "path_with_namespace": "comput/gitlab-report-generator/julius-alvior"
+  },
+  {
+    "id": 43699310,
+    "path_with_namespace": "comput/gitlab-report-generator/mary-grace"
+  },
+  {
     "id": 28004333,
     "path_with_namespace": "comput/golden-wing/wing-admin-ui"
   },
@@ -304,8 +312,16 @@
     "path_with_namespace": "comput/p2p/p2p-client-ui"
   },
   {
-    "id": 40462574,
-    "path_with_namespace": "comput/pmang/server"
+    "id": 43460590,
+    "path_with_namespace": "comput/pmang/badugi/client"
+  },
+  {
+    "id": 43460585,
+    "path_with_namespace": "comput/pmang/badugi/docs"
+  },
+  {
+    "id": 43394059,
+    "path_with_namespace": "comput/pmang/badugi/server"
   },
   {
     "id": 38271218,
@@ -556,18 +572,6 @@
     "path_with_namespace": "comput/test-projects/translations-app/translations-app-ui"
   },
   {
-    "id": 32249440,
-    "path_with_namespace": "comput/toto-banner/toto-banner-admin-api"
-  },
-  {
-    "id": 32249436,
-    "path_with_namespace": "comput/toto-banner/toto-banner-admin-ui"
-  },
-  {
-    "id": 32249357,
-    "path_with_namespace": "comput/toto-banner/toto-banner-client-ui"
-  },
-  {
     "id": 15223970,
     "path_with_namespace": "basic-programs/unit-testing"
   },
@@ -640,6 +644,14 @@
     "path_with_namespace": "karmablackshaw-lance/brgy-qr/brgy-qr-ui"
   },
   {
+    "id": 43696619,
+    "path_with_namespace": "comput/shared-sports-inplay"
+  },
+  {
+    "id": 42654205,
+    "path_with_namespace": "comput/merge-sh"
+  },
+  {
     "id": 38165266,
     "path_with_namespace": "comput/wing-clicker/api"
   },
@@ -654,6 +666,10 @@
   {
     "id": 35499119,
     "path_with_namespace": "comput/wing-games/minigame/minigame-api"
+  },
+  {
+    "id": 32249440,
+    "path_with_namespace": "comput/toto-banner/toto-banner-admin-api"
   },
   {
     "id": 32077486,
