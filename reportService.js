@@ -3,12 +3,12 @@ const moment = require('moment')
 const dedent = require('dedent')
 const _ = require('lodash')
 const Promise = require('bluebird')
-const fs = Promise.promisifyAll(require('fs'))
+const fs = Promise.promisifyAll(require('fs-extra'))
 
 const { pathExists } = require('./helpers')
 
-const { ACCESS_TOKEN, PROJECT_FILE_PATH } = require('./constants')
-
+const { PROJECT_FILE_PATH } = require('./constants')
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN
 module.exports = {
   async getProjects ({
     reset = false
@@ -33,7 +33,7 @@ module.exports = {
     })
 
     const allGroups = await (async () => {
-      const response = await Promise.all(groups.map(async group => {
+      const response = await Promise.map(groups, async group => {
         try {
           const { data } = await axios.get(`https://gitlab.com/api/v4/groups/${group.id}/subgroups`, {
             params: {
@@ -51,7 +51,9 @@ module.exports = {
           console.log(error)
           throw error
         }
-      }))
+      }, {
+        concurrency: 3
+      })
 
       const mainGroups = groups.map(group => ({
         id: group.id,
@@ -59,7 +61,8 @@ module.exports = {
         web_url: group.web_url
       }))
 
-      return _.flatten(response).concat(mainGroups)
+      return _.flatten(response)
+        .concat(mainGroups)
     })()
 
     const promises = allGroups.flatMap(group => {
@@ -78,13 +81,13 @@ module.exports = {
       ]
     })
 
-    const projectResponse = await Promise.all(promises)
-
-    const list = _.flatMap(projectResponse, ({ data: projects }) => {
+    const list = Promise.map(promises, ({ data: projects }) => {
       return projects.map(project => ({
         id: project.id,
         path_with_namespace: project.path_with_namespace
       }))
+    }, {
+      concurrency: 5
     })
 
     const projects = _.uniqBy(list, 'id')
@@ -96,43 +99,60 @@ module.exports = {
 
   async generateReport ({
     email,
-    reset,
-    include_merge: includeMerge
+    include_merge: includeMerge,
+    limit = Infinity
   }) {
     try {
-      const projects = await this.getProjects({ reset })
+      const projects = await fs.readJSON(PROJECT_FILE_PATH)
 
-      await Promise.all(projects.map(async project => {
-        const {
-          data: commits
-        } = await axios.get(`https://gitlab.com/api/v4/projects/${project.id}/repository/commits`, {
-          params: {
-            access_token: ACCESS_TOKEN,
-            since: moment().startOf('day'),
-            all: true
-          }
-        })
+      let totalCommits = 0
 
-        project.commits = commits
-          .filter(commit => {
-            if (!includeMerge && commit.title.includes('Merge branch')) {
-              return false
+      await Promise.map(
+        projects,
+        async project => {
+          const {
+            data: commits
+          } = await axios.get(`https://gitlab.com/api/v4/projects/${project.id}/repository/commits`, {
+            params: {
+              access_token: ACCESS_TOKEN,
+              since: moment().startOf('day'),
+              all: true
             }
-
-            return commit.committer_email === email
           })
-          .map(commit => ({
-            id: commit.id,
-            created_at: commit.created_at,
-            committer_email: commit.committer_email,
-            web_url: commit.web_url,
-            title: commit.title.includes('Merge branch')
-              ? 'Code review'
-              : commit.title
-          }))
-      }))
 
-      const projectsWithCommits = projects.filter(x => x.commits.length)
+          project.commits = commits
+            .filter(commit => {
+              if (!includeMerge && commit.title.includes('Merge branch')) {
+                return false
+              }
+
+              if (commit.committer_email !== email) {
+                return false
+              }
+
+              totalCommits += 1
+
+              if (totalCommits > limit) {
+                return false
+              }
+
+              return true
+            })
+            .map(commit => ({
+              id: commit.id,
+              created_at: commit.created_at,
+              committer_email: commit.committer_email,
+              web_url: commit.web_url,
+              title: commit.title.includes('Merge branch')
+                ? 'Code review'
+                : commit.title
+            }))
+        },
+        { concurrency: 10 }
+      )
+
+      const projectsWithCommits = projects
+        .filter(x => x.commits.length)
 
       let report = ''
       projectsWithCommits.forEach(project => {
@@ -142,9 +162,9 @@ module.exports = {
         }).join('\n')
 
         report += dedent(`
-        \n${text}
-        ${commits}\n
-      `)
+          \n${text}
+          ${commits}\n
+        `)
 
         report += '\n\n'
       })
@@ -155,5 +175,4 @@ module.exports = {
       throw error
     }
   }
-
 }
